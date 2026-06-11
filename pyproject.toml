@@ -30,6 +30,7 @@ jsonschema = ["jsonschema>=4.0"]
 test = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
     "jsonschema>=4.0",
 ]
 dev = [
@@ -48,6 +49,7 @@ packages = ["src/langchain_tool_arg_validation"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 88

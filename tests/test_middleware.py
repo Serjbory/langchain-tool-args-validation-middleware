@@ -112,9 +112,7 @@ def test_unknown_tool_passes_through():
 
 
 def test_strip_writes_back_cleaned_args():
-    resp = FakeResponse(
-        [ai_with_calls(call("toolA", "1", a=1, note=None, tags=[]))]
-    )
+    resp = FakeResponse([ai_with_calls(call("toolA", "1", a=1, note=None, tags=[]))])
     handler = ScriptedHandler(resp)
     mw = ToolArgValidationMiddleware(tools=TOOLS, strip_empty_values=True)
 
