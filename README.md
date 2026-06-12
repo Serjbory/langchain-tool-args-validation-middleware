@@ -1,4 +1,4 @@
-# langchain-tool-validation-middleware
+# langchain-tool-args-validation-middleware
 
 A LangChain agent middleware that validates LLM-generated **tool-call arguments**
 against each tool's schema **before** the tool runs (and before any
@@ -7,8 +7,8 @@ human-in-the-loop approval step). When arguments are invalid it appends error
 model node, so only the final valid `AIMessage` ever enters the graph state.
 
 ```bash
-pip install langchain-tool-validation-middleware            # Pydantic tools only
-pip install "langchain-tool-validation-middleware[jsonschema]"  # + MCP / dict-schema tools
+pip install langchain-tool-args-validation-middleware            # Pydantic tools only
+pip install "langchain-tool-args-validation-middleware[jsonschema]"  # + MCP / dict-schema tools
 ```
 
 ## Why
@@ -24,7 +24,7 @@ It complements, rather than replaces, `ToolRetryMiddleware` (retries on tool
 *exceptions*) and `ModelRetryMiddleware` (retries on model *exceptions*): this
 one retries on *schema violations*, before execution.
 
-![Trace showing the middleware catching an invalid tool call and prompting the model to self-correct](https://raw.githubusercontent.com/Serjbory/langchain-tool-arg-validation-middleware/main/docs/images/trace-example.jpg)
+![Trace showing the middleware catching an invalid tool call and prompting the model to self-correct](https://raw.githubusercontent.com/Serjbory/langchain-tool-args-validation-middleware/main/docs/images/trace-example.jpg)
 
 *A trace of `create_oos_alert`: the model emitted arguments that violate the
 schema, the middleware rejected them with a precise error and a corrective hint,
@@ -34,12 +34,12 @@ and the model retried — all inside the model node, before the tool ran.*
 
 ```python
 from langchain.agents import create_agent
-from langchain_tool_arg_validation import ToolArgValidationMiddleware
+from langchain_tool_args_validation_middleware import ToolArgsValidationMiddleware
 
 agent = create_agent(
     model,
     tools=tools,
-    middleware=[ToolArgValidationMiddleware()],  # resolves schemas from the agent's tools
+    middleware=[ToolArgsValidationMiddleware()],  # resolves schemas from the agent's tools
 )
 ```
 
@@ -103,7 +103,7 @@ After `max_retries`, the default `on_failure="pass"` returns the last response
 unchanged — the (still-invalid) args reach the tool node, where normal tool
 error handling takes over. This makes the middleware best-effort
 self-correction, not a hard guarantee. Use `on_failure="raise"` if you'd rather
-surface a `ToolArgValidationError`.
+surface a `ToolArgsValidationError`.
 
 ## Extra validators
 
@@ -112,9 +112,9 @@ LangChain internal message IDs (`lc_<uuid>`) that LLMs sometimes mistake for
 real data identifiers:
 
 ```python
-from langchain_tool_arg_validation import detect_langchain_internal_ids
+from langchain_tool_args_validation_middleware import detect_langchain_internal_ids
 
-ToolArgValidationMiddleware(extra_validators=[detect_langchain_internal_ids])
+ToolArgsValidationMiddleware(extra_validators=[detect_langchain_internal_ids])
 ```
 
 ## License

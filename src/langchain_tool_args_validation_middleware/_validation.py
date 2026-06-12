@@ -93,7 +93,7 @@ def _default_json_validator_class() -> type:
         raise ImportError(
             "A tool with a JSON Schema (dict) args_schema was provided, but "
             "'jsonschema' is not installed. Install it with "
-            "`pip install langchain-tool-validation-middleware[jsonschema]`, or pass a "
+            "`pip install langchain-tool-args-validation-middleware[jsonschema]`, or pass a "
             "custom `json_schema_validator_class`."
         ) from exc
     return Draft7Validator  # type: ignore[no-any-return]

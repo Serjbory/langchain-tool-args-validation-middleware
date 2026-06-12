@@ -1,4 +1,4 @@
-"""``ToolArgValidationMiddleware`` — validate LLM tool-call args before execution.
+"""``ToolArgsValidationMiddleware`` — validate LLM tool-call args before execution.
 
 The middleware wraps the model invocation (``wrap_model_call`` /
 ``awrap_model_call``). After each model response it validates every tool call's
@@ -37,7 +37,7 @@ ExtraValidator = Callable[[str, "dict[str, Any]"], "list[str]"]
 OnFailure = Literal["pass", "raise"]
 
 
-class ToolArgValidationError(RuntimeError):
+class ToolArgsValidationError(RuntimeError):
     """Raised when validation retries are exhausted and ``on_failure='raise'``."""
 
 
@@ -48,7 +48,7 @@ _BATCH_SIBLING_NOTICE = (
 )
 
 
-class ToolArgValidationMiddleware(AgentMiddleware):
+class ToolArgsValidationMiddleware(AgentMiddleware):
     """Validate tool-call arguments against each tool's schema, with retry.
 
     Parameters
@@ -83,7 +83,7 @@ class ToolArgValidationMiddleware(AgentMiddleware):
         What to do after retries are exhausted with the args still invalid:
         ``"pass"`` (default) returns the last response unchanged (fail open —
         downstream tool error handling takes over); ``"raise"`` raises
-        :class:`ToolArgValidationError`.
+        :class:`ToolArgsValidationError`.
     """
 
     def __init__(
@@ -299,7 +299,7 @@ class ToolArgValidationMiddleware(AgentMiddleware):
 
     def _exhausted(self, response: ModelResponse[Any]) -> ModelResponse[Any]:
         if self._on_failure == "raise":
-            raise ToolArgValidationError(
+            raise ToolArgsValidationError(
                 f"Tool-call arguments still invalid after {self._max_retries} "
                 "validation retries."
             )
