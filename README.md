@@ -24,6 +24,12 @@ It complements, rather than replaces, `ToolRetryMiddleware` (retries on tool
 *exceptions*) and `ModelRetryMiddleware` (retries on model *exceptions*): this
 one retries on *schema violations*, before execution.
 
+![Trace showing the middleware catching an invalid tool call and prompting the model to self-correct](https://raw.githubusercontent.com/Serjbory/langchain-tool-arg-validation-middleware/main/docs/images/trace-example.jpg)
+
+*A trace of `create_oos_alert`: the model emitted arguments that violate the
+schema, the middleware rejected them with a precise error and a corrective hint,
+and the model retried — all inside the model node, before the tool ran.*
+
 ## Usage
 
 ```python
