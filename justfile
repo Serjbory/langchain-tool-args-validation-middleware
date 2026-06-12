@@ -5,7 +5,7 @@
 # To format justfile: just --fmt --unstable
 
 # Variables
-src_dir := "src/langchain_tool_arg_validation"
+src_dir := "src/langchain_tool_args_validation_middleware"
 
 # Default recipe to display available commands
 default:
@@ -32,6 +32,26 @@ test path="tests":
 
 # Run format, lint, and tests to check everything before committing
 pre-commit: format lint test
+
+# Build sdist and wheel into dist/
+build:
+    rm -rf dist
+    uv build
+
+# Publish to TestPyPI (local: uses UV_PUBLISH_TOKEN / ~/.pypirc; CI uses trusted publishing)
+publish-test: build
+    uv publish --publish-url https://test.pypi.org/legacy/
+
+# Publish to PyPI
+publish: build
+    uv publish
+
+# Bump version (just bump patch|minor|major|rc), commit, and tag
+bump level="patch":
+    uv version --bump {{ level }}
+    git commit -am "release: v$(uv version --short)"
+    git tag "v$(uv version --short)"
+    @echo "Pushed nothing yet. Run: git push && git push --tags"
 
 # Clean up cache files
 clean:

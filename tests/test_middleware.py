@@ -4,9 +4,9 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from pydantic import BaseModel
 
-from langchain_tool_arg_validation import (
-    ToolArgValidationError,
-    ToolArgValidationMiddleware,
+from langchain_tool_args_validation_middleware import (
+    ToolArgsValidationError,
+    ToolArgsValidationMiddleware,
     detect_langchain_internal_ids,
 )
 from tests.conftest import FakeRequest, FakeResponse, ai_with_calls, call, make_tool
@@ -58,7 +58,7 @@ def test_partial_batch_failure_responds_to_every_call():
         [ai_with_calls(call("toolA", "1", a=1), call("toolB", "2", b=5))]
     )
     handler = ScriptedHandler(bad, good)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=2)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=2)
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -84,7 +84,7 @@ def test_partial_batch_failure_responds_to_every_call():
 def test_all_valid_returns_immediately_without_retry():
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(good)
-    mw = ToolArgValidationMiddleware(tools=TOOLS)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS)
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -95,14 +95,14 @@ def test_all_valid_returns_immediately_without_retry():
 def test_no_tool_calls_passes_through():
     resp = FakeResponse([ai_with_calls()])  # plain answer, no calls
     handler = ScriptedHandler(resp)
-    mw = ToolArgValidationMiddleware(tools=TOOLS)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS)
     assert mw.wrap_model_call(_request(), handler) is resp
 
 
 def test_unknown_tool_passes_through():
     resp = FakeResponse([ai_with_calls(call("mystery", "9", whatever=1))])
     handler = ScriptedHandler(resp)
-    mw = ToolArgValidationMiddleware(tools=TOOLS)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS)
     assert mw.wrap_model_call(_request(), handler) is resp
 
 
@@ -114,7 +114,7 @@ def test_unknown_tool_passes_through():
 def test_strip_writes_back_cleaned_args():
     resp = FakeResponse([ai_with_calls(call("toolA", "1", a=1, note=None, tags=[]))])
     handler = ScriptedHandler(resp)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, strip_empty_values=True)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, strip_empty_values=True)
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -125,7 +125,7 @@ def test_strip_writes_back_cleaned_args():
 def test_strip_disabled_keeps_original_args():
     resp = FakeResponse([ai_with_calls(call("toolA", "1", a=1, note=None, tags=[]))])
     handler = ScriptedHandler(resp)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, strip_empty_values=False)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, strip_empty_values=False)
 
     mw.wrap_model_call(_request(), handler)
 
@@ -140,7 +140,7 @@ def test_strip_disabled_keeps_original_args():
 def test_fail_open_passes_through_after_exhaustion():
     bad = FakeResponse([ai_with_calls(call("toolA", "1"))])  # always invalid
     handler = ScriptedHandler(bad, bad, bad)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=2, on_failure="pass")
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=2, on_failure="pass")
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -151,9 +151,9 @@ def test_fail_open_passes_through_after_exhaustion():
 def test_on_failure_raise():
     bad = FakeResponse([ai_with_calls(call("toolA", "1"))])
     handler = ScriptedHandler(bad, bad)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=1, on_failure="raise")
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=1, on_failure="raise")
 
-    with pytest.raises(ToolArgValidationError):
+    with pytest.raises(ToolArgsValidationError):
         mw.wrap_model_call(_request(), handler)
 
 
@@ -163,7 +163,7 @@ def test_last_retry_response_is_validated():
     bad = FakeResponse([ai_with_calls(call("toolA", "1"))])
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(bad, good)  # second (final) attempt is valid
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=1, on_failure="raise")
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=1, on_failure="raise")
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -175,7 +175,7 @@ def test_max_retries_zero_validates_once_without_retrying():
     """max_retries=0 still validates the single response; valid output passes."""
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(good)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=0, on_failure="raise")
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=0, on_failure="raise")
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -186,7 +186,7 @@ def test_max_retries_zero_validates_once_without_retrying():
 def test_max_retries_zero_does_not_retry_invalid():
     bad = FakeResponse([ai_with_calls(call("toolA", "1"))])
     handler = ScriptedHandler(bad)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=0, on_failure="pass")
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=0, on_failure="pass")
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -200,7 +200,7 @@ def test_errors_accumulate_across_retries():
     bad2 = FakeResponse([ai_with_calls(call("toolA", "1", a="oops"))])
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(bad1, bad2, good)
-    mw = ToolArgValidationMiddleware(tools=TOOLS, max_retries=2)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS, max_retries=2)
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -221,7 +221,7 @@ def test_lazy_resolution_from_request_tools():
     bad = FakeResponse([ai_with_calls(call("toolA", "1"))])
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(bad, good)
-    mw = ToolArgValidationMiddleware()  # no explicit tools
+    mw = ToolArgsValidationMiddleware()  # no explicit tools
 
     out = mw.wrap_model_call(_request(), handler)
 
@@ -245,7 +245,7 @@ def test_jsonschema_mcp_tool_end_to_end():
     bad = FakeResponse([ai_with_calls(call("weather", "1"))])  # missing 'city'
     good = FakeResponse([ai_with_calls(call("weather", "1", city="Berlin"))])
     handler = ScriptedHandler(bad, good)
-    mw = ToolArgValidationMiddleware(tools=mcp_tools)
+    mw = ToolArgsValidationMiddleware(tools=mcp_tools)
 
     out = mw.wrap_model_call(request, handler)
 
@@ -264,7 +264,7 @@ def test_extra_validator_flags_langchain_ids():
     bad = FakeResponse([ai_with_calls(call("toolA", "1", a=1, note=lc_id))])
     good = FakeResponse([ai_with_calls(call("toolA", "1", a=1))])
     handler = ScriptedHandler(bad, good)
-    mw = ToolArgValidationMiddleware(
+    mw = ToolArgsValidationMiddleware(
         tools=TOOLS, extra_validators=[detect_langchain_internal_ids]
     )
 
@@ -279,7 +279,7 @@ async def test_async_parity():
     bad = FakeResponse([ai_with_calls(call("toolB", "2"))])
     good = FakeResponse([ai_with_calls(call("toolB", "2", b=7))])
     handler = ScriptedHandler(bad, good)
-    mw = ToolArgValidationMiddleware(tools=TOOLS)
+    mw = ToolArgsValidationMiddleware(tools=TOOLS)
 
     out = await mw.awrap_model_call(_request(), handler.acall)
 

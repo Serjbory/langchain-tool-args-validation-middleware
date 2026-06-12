@@ -1,7 +1,7 @@
 """Tests for strip_empty — especially the placeholder-string footgun."""
 
-from langchain_tool_arg_validation import strip_empty
-from langchain_tool_arg_validation._strip import DEFAULT_PLACEHOLDER_STRINGS
+from langchain_tool_args_validation_middleware import strip_empty
+from langchain_tool_args_validation_middleware._strip import DEFAULT_PLACEHOLDER_STRINGS
 
 
 def test_removes_none_and_empty_containers():

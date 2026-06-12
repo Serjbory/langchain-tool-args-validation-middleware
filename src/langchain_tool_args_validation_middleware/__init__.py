@@ -6,16 +6,16 @@ from .extras import detect_langchain_internal_ids
 from .middleware import (
     ExtraValidator,
     OnFailure,
-    ToolArgValidationError,
-    ToolArgValidationMiddleware,
+    ToolArgsValidationError,
+    ToolArgsValidationMiddleware,
 )
 
 __all__ = [
     "DEFAULT_PLACEHOLDER_STRINGS",
     "ExtraValidator",
     "OnFailure",
-    "ToolArgValidationError",
-    "ToolArgValidationMiddleware",
+    "ToolArgsValidationError",
+    "ToolArgsValidationMiddleware",
     "ValidationIssue",
     "detect_langchain_internal_ids",
     "strip_empty",

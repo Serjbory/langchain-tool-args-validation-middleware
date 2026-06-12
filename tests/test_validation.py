@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from langchain_tool_arg_validation._validation import (
+from langchain_tool_args_validation_middleware._validation import (
     format_issues,
     resolve_validators,
 )
