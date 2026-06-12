@@ -107,15 +107,72 @@ surface a `ToolArgsValidationError`.
 
 ## Extra validators
 
-Plug in domain rules without touching core behaviour. A bundled example flags
-LangChain internal message IDs (`lc_<uuid>`) that LLMs sometimes mistake for
-real data identifiers:
+Schema validation catches *structural* problems (types, required fields, enums).
+For *domain* rules — value ranges, allowed IDs, business constraints — pass
+`extra_validators`: any number of `(tool_name, args) -> list[str]` callables that
+run alongside schema checks and feed the same self-correcting retry loop. They
+run even on tools with no resolvable schema.
+
+A bundled example flags LangChain internal message IDs (`lc_<uuid>`) that LLMs
+sometimes mistake for real data identifiers:
 
 ```python
 from langchain_tool_args_validation_middleware import detect_langchain_internal_ids
 
 ToolArgsValidationMiddleware(extra_validators=[detect_langchain_internal_ids])
 ```
+
+### Declarative field rules
+
+For the common case — "the value at *this* field must satisfy *this* condition" —
+`FieldRule` is a structured builder so you don't hand-roll path walking, list
+iteration or tool targeting. It captures the three parts of a rule: **where**
+(`path`), **what must hold** (`check`), and **what to say** (`error`). A
+`FieldRule` *is* an `extra_validators` callable, so it drops straight into the
+same list.
+
+```python
+from langchain_tool_args_validation_middleware import FieldRule
+
+ToolArgsValidationMiddleware(
+    extra_validators=[
+        FieldRule(
+            path="numbers.*",  # each element of the `numbers` list
+            check=lambda v: isinstance(v, int) and 0 < v < 100,
+            error=lambda v: f"value {v!r} is out of range (allowed: > 0 and < 100)",
+            tools=["my_tool"],  # restrict to this tool; omit for all tools
+        ),
+    ],
+)
+```
+
+If the model emits `{"numbers": [50, -1, 100]}`, it gets back a precise,
+per-element error — `argument 'numbers[1]': value -1 is out of range` — and
+retries with corrected values.
+
+**Path syntax.** Dotted keys, with `*` to fan out over a list's elements or a
+dict's values:
+
+| `path` | Matches |
+|---|---|
+| `"numbers"` | the `numbers` value itself (e.g. validate list length) |
+| `"numbers.*"` | each element of the `numbers` list |
+| `"config.thresholds.*"` | each element nested under `config.thresholds` |
+| `"scores.*"` | each value of the `scores` dict |
+
+`*` on a non-iterable matches nothing (type errors are the schema's job).
+
+| Parameter | Default | Description |
+|---|---|---|
+| `path` | — | Dotted path into `args`; `*` fans out over list elements / dict values. |
+| `check` | — | Predicate on each resolved value; return `True` for valid. |
+| `error` | — | Message when `check` fails — a string, or a callable taking the value. Rendered with the tool name and resolved location prepended. |
+| `tools` | `None` | Tool names this rule applies to. `None` = all tools. |
+| `when_missing` | `"skip"` | When `path` resolves to nothing: `"skip"` (let the schema's `required` own presence) or `"error"`. |
+
+For cross-field or conditional logic (`if X then Y`), drop down to a plain
+`(name, args) -> list[str]` callable — `FieldRule` deliberately covers only the
+field-scoped case.
 
 ## License
 

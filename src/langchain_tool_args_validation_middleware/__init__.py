@@ -9,10 +9,12 @@ from .middleware import (
     ToolArgsValidationError,
     ToolArgsValidationMiddleware,
 )
+from .rules import FieldRule
 
 __all__ = [
     "DEFAULT_PLACEHOLDER_STRINGS",
     "ExtraValidator",
+    "FieldRule",
     "OnFailure",
     "ToolArgsValidationError",
     "ToolArgsValidationMiddleware",
@@ -21,4 +23,4 @@ __all__ = [
     "strip_empty",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
